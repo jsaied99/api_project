@@ -1,19 +1,34 @@
+import urllib.request
 import flask
 import json
 from flask import request, jsonify
-from flask import render_template
+from flask import render_template, redirect
 import pandas as pd
 import psycopg2
-
-
+from linkedin import linkedin
+from urllib.request import urlopen
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
 
-books = json.load(open ("data/api.json", "r"))
+books = json.load(open("data/api.json", "r"))
 
 @app.route('/', methods=['GET'])
 def home():
-    return render_template("index.html")
+    if 'code' in request.args:
+        code = request.args['code']
+        client_id = "78yuk1i7oafw90"
+        client_secret = "UHo4QTDPugd9BdRH"
+        redirect_uri = "http://localhost:5000"
+
+        s = """https://www.linkedin.com/oauth/v2/accessToken?grant_type=authorization_code&client_id=%s&client_secret=%s&code=%s&redirect_uri=%s""" % (client_id, client_secret, code, redirect_uri)
+        # return s
+        return redirect(s)
+
+        # application = linkedin.LinkedInApplication(token=token)
+        # return application.get_profile()
+    url = "https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=78yuk1i7oafw90&scope=r_liteprofile&state=123456&redirect_uri=http://localhost:5000"
+    # return urllib.request.urlopen(url).read().decode()
+    return url
 
 @app.errorhandler(404)
 def page_not_found(e):
@@ -84,6 +99,14 @@ def add_data():
     else:
         cursor.close()
         return "FAILED!"
+
+
+@app.route('/code', methods=['GET'])
+def linkedin_all():
+    if 'code' in request.args:
+        token = request.args['code']
+        application = linkedin.LinkedInApplication(token = token)
+    return "<h2>" + str(application.get_profile()) + "</h2>"
 
 
 
